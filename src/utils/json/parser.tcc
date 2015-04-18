@@ -1,8 +1,6 @@
 /* parser.tcc                                 -*- C++ -*-
    Rémi Attab (remi.attab@gmail.com), 12 Apr 2015
    FreeBSD-style copyright and disclaimer apply
-
-   Template implementation of the JSON parser.
 */
 
 #include "json.h"
@@ -48,14 +46,18 @@ void parseObject(Reader& reader, const Fn& fn)
     if (token.type() == Token::Null) return;
     reader.assertToken(token, Token::ObjectStart);
 
-    token = reader.nextToken();
-    if (token.type() == Token::ObjectEnd) return;
+    token = reader.peekToken();
+    if (token.type() == Token::ObjectEnd) {
+        reader.expectToken(Token::ObjectEnd);
+        return;
+    }
 
     while (reader) {
-        reader.assertToken(token, Token::String);
-        reader.expectToken(Token::KeySeparator);
+        token = reader.expectToken(Token::String);
+        const std::string& key = token.asString();
+        token = reader.expectToken(Token::KeySeparator);
 
-        fn(token.asString());
+        fn(key);
 
         token = reader.nextToken();
         if (token.type() == Token::ObjectEnd) return;
@@ -70,8 +72,11 @@ void parseArray(Reader& reader, const Fn& fn)
     if (token.type() == Token::Null) return;
     reader.assertToken(token, Token::ArrayStart);
 
-    token = reader.nextToken();
-    if (token.type() == Token::ArrayEnd) return;
+    token = reader.peekToken();
+    if (token.type() == Token::ArrayEnd) {
+        reader.expectToken(Token::ArrayEnd);
+        return;
+    }
 
     for (size_t i = 0; reader; ++i) {
         fn(i);
